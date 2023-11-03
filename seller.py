@@ -99,7 +99,7 @@ def update_price(prices: list, client_id, seller_token):
             seller_token (str): токен продавца
 
         Returns:
-            dict: возвращает обновленный слвоарь из цен на озоне
+            dict: возвращает обновленный словарь из цен на озоне
 
         Raises:
             requests.exceptions.InvalidHeader: если неправильно указаны
@@ -201,7 +201,7 @@ def download_stock():
 
 
 def create_stocks(watch_remnants, offer_ids):
-    """Обновить остатки
+    """создать остатки
 
             Args:
                 watch_remnants (dict): словарь остатков на casio

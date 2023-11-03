@@ -11,6 +11,24 @@ logger = logging.getLogger(__file__)
 
 
 def get_product_list(page, campaign_id, access_token):
+    """Получить список товаров яндекс маркета.
+
+            Args:
+                page (str): Идентификатор страницы c результатами.
+                campaign_id (int): Идентификатор кампании в API и
+                    магазина в кабинете.
+                access_token (str): токен доступа
+
+            Returns:
+                dict: словарь с продуктами
+
+            Raises:
+                requests.exceptions.InvalidHeader: если неправильно указаны
+                    id или токен
+                AttributeError: если аргумент campaign_id не int или
+                    page не str
+
+        """
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
         "Content-Type": "application/json",
@@ -30,6 +48,24 @@ def get_product_list(page, campaign_id, access_token):
 
 
 def update_stocks(stocks, campaign_id, access_token):
+    """Обновить остатки
+
+            Args:
+                stocks (list): список остатков продуктов
+                campaign_id (int): Идентификатор кампании в API и
+                    магазина в кабинете.
+                access_token (str): токен доступа
+
+            Returns:
+                dict: возвращает обновленный словарь из остатков на яндекс маркет
+
+            Raises:
+                requests.exceptions.InvalidHeader: если неправильно указаны
+                    id или токен
+                AttributeError: если аргумент campaign_id не int или
+                    page не str
+
+    """
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
         "Content-Type": "application/json",
@@ -46,6 +82,24 @@ def update_stocks(stocks, campaign_id, access_token):
 
 
 def update_price(prices, campaign_id, access_token):
+    """Обновить цены товаров
+
+        Args:
+            prices (list): список цен
+            campaign_id (int): Идентификатор кампании в API и
+                    магазина в кабинете.
+            access_token (str): токен доступа
+
+        Returns:
+            dict: возвращает обновленный словарь из цен на яндекс маркет
+
+        Raises:
+            requests.exceptions.InvalidHeader: если неправильно указаны
+                id или токен
+            AttributeError: если аргумент campaign_id не int или
+                    page не str
+
+    """
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
         "Content-Type": "application/json",
@@ -62,7 +116,22 @@ def update_price(prices, campaign_id, access_token):
 
 
 def get_offer_ids(campaign_id, market_token):
-    """Получить артикулы товаров Яндекс маркета"""
+    """Получить артикулы товаров Яндекс маркета
+
+        Args:
+            campaign_id (int): Идентификатор кампании в API и
+                    магазина в кабинете.
+            market_token (str): токен доступа
+
+        Returns:
+            list: список с продуктами
+
+        Raises:
+            requests.exceptions.InvalidHeader: если неправильно указаны
+                id или токен
+
+        """
+
     page = ""
     product_list = []
     while True:
@@ -78,7 +147,21 @@ def get_offer_ids(campaign_id, market_token):
 
 
 def create_stocks(watch_remnants, offer_ids, warehouse_id):
-    # Уберем то, что не загружено в market
+    """создать остатки
+
+            Args:
+                watch_remnants (dict): словарь остатков на casio
+                offer_ids (list): список с продуктами
+                warehouse_id (int): id склада
+
+            Returns:
+                dict: возвращает обновленный список словарей с остатками
+
+            Raises:
+                requests.exceptions.InvalidHeader: если неправильно указаны
+                    id или токен
+
+    """
     stocks = list()
     date = str(datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z")
     for watch in watch_remnants:
@@ -123,6 +206,21 @@ def create_stocks(watch_remnants, offer_ids, warehouse_id):
 
 
 def create_prices(watch_remnants, offer_ids):
+    """Сформировать цены
+
+             Args:
+                 watch_remnants (dict): словарь остатков на casio
+                 offer_ids (list): список с продуктами
+
+             Returns:
+                 dict: возвращает обновленный список словарей с
+                    ценами на часы
+
+             Raises:
+                 requests.exceptions.InvalidHeader: если неправильно указаны
+                     id или токен
+
+        """
     prices = []
     for watch in watch_remnants:
         if str(watch.get("Код")) in offer_ids:
@@ -143,6 +241,22 @@ def create_prices(watch_remnants, offer_ids):
 
 
 async def upload_prices(watch_remnants, campaign_id, market_token):
+    """загрузить цены
+
+            Args:
+                watch_remnants (dict): словарь остатков на casio
+                campaign_id (int): Идентификатор кампании в API и
+                    магазина в кабинете.
+                market_token (str): токен доступа
+
+            Returns:
+                dict: возвращает обновленный список словарей с ценами
+
+            Raises:
+                requests.exceptions.InvalidHeader: если неправильно указаны
+                    id или токен
+
+    """
     offer_ids = get_offer_ids(campaign_id, market_token)
     prices = create_prices(watch_remnants, offer_ids)
     for some_prices in list(divide(prices, 500)):
@@ -151,6 +265,23 @@ async def upload_prices(watch_remnants, campaign_id, market_token):
 
 
 async def upload_stocks(watch_remnants, campaign_id, market_token, warehouse_id):
+    """загрузить остатки
+
+            Args:
+                watch_remnants (dict): словарь остатков на casio
+                campaign_id (int): Идентификатор кампании в API и
+                    магазина в кабинете.
+                market_token (str): токен доступа
+                warehouse_id (int): id склада
+
+            Returns:
+                dict: возвращает обновленный список словарей с остатками
+
+            Raises:
+                requests.exceptions.InvalidHeader: если неправильно указаны
+                    id или токен
+
+    """
     offer_ids = get_offer_ids(campaign_id, market_token)
     stocks = create_stocks(watch_remnants, offer_ids, warehouse_id)
     for some_stock in list(divide(stocks, 2000)):
