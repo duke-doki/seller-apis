@@ -12,7 +12,32 @@ logger = logging.getLogger(__file__)
 
 
 def get_product_list(last_id, client_id, seller_token):
-    """Получить список товаров магазина озон"""
+    """Получить список товаров магазина озон.
+
+        Args:
+            last_id (int): id последнего продукта
+            client_id (str): id клиента
+            seller_token (str): токен продавца
+
+        Returns:
+            dict: словарь с продуктами
+
+        Raises:
+            requests.exceptions.InvalidHeader: если неправильно указаны
+                id или токен
+
+        Examples:
+
+            >>> print(get_product_list(last_id, client_id, seller_token))
+                "items": [
+                    {
+                        "product_id": 223681945,
+                        "offer_id": "136748"
+                    }
+                ],
+                "total": 1,
+                "last_id": "bnVсbA=="
+    """
     url = "https://api-seller.ozon.ru/v2/product/list"
     headers = {
         "Client-Id": client_id,
@@ -32,7 +57,24 @@ def get_product_list(last_id, client_id, seller_token):
 
 
 def get_offer_ids(client_id, seller_token):
-    """Получить артикулы товаров магазина озон"""
+    """Получить артикулы товаров магазина озон
+
+        Args:
+            client_id (int): id клиента
+            seller_token (str): токен продавца
+
+        Returns:
+            list: список с продуктами
+
+        Raises:
+            requests.exceptions.InvalidHeader: если неправильно указаны
+                id или токен
+
+        Examples:
+            >>> print(get_offer_ids(client_id, seller_token))
+            [136748,]
+
+        """
     last_id = ""
     product_list = []
     while True:
@@ -49,7 +91,38 @@ def get_offer_ids(client_id, seller_token):
 
 
 def update_price(prices: list, client_id, seller_token):
-    """Обновить цены товаров"""
+    """Обновить цены товаров
+
+        Args:
+            prices (list): список цен
+            client_id (str): id клиента
+            seller_token (str): токен продавца
+
+        Returns:
+            dict: возвращает обновленный слвоарь из цен на озоне
+
+        Raises:
+            requests.exceptions.InvalidHeader: если неправильно указаны
+                id или токен
+            AttributeError: если аргумент prices не list
+
+        Examples:
+            >>> print(update_price(prices: list, client_id, seller_token))
+                {
+                    "result":
+
+                        [
+
+                            {
+                                "product_id": 1386,
+                                "offer_id": "PH8865",
+                                "updated": true,
+                                "errors": []
+                            }
+                        ]
+
+                }
+    """
     url = "https://api-seller.ozon.ru/v1/product/import/prices"
     headers = {
         "Client-Id": client_id,
@@ -62,7 +135,34 @@ def update_price(prices: list, client_id, seller_token):
 
 
 def update_stocks(stocks: list, client_id, seller_token):
-    """Обновить остатки"""
+    """Обновить остатки
+
+            Args:
+                stocks (list): список остатков продуктов
+                client_id (str): id клиента
+                seller_token (str): токен продавца
+
+            Returns:
+                dict: возвращает обновленный словарь из остатков на озоне
+
+            Raises:
+                requests.exceptions.InvalidHeader: если неправильно указаны
+                    id или токен
+                AttributeError: если аргумент stocks не list
+
+            Examples:
+                >>> print(update_stocks(stocks: list, client_id, seller_token))
+                    {
+                        "result": [
+                            {
+                                "product_id": 55946,
+                                "offer_id": "PG-2404С1",
+                                "updated": true,
+                                "errors": []
+                            }
+                        ]
+                    }
+    """
     url = "https://api-seller.ozon.ru/v1/product/import/stocks"
     headers = {
         "Client-Id": client_id,
@@ -75,15 +175,20 @@ def update_stocks(stocks: list, client_id, seller_token):
 
 
 def download_stock():
-    """Скачать файл ostatki с сайта casio"""
-    # Скачать остатки с сайта
+    """Скачать файл ostatki с сайта casio
+
+               Returns:
+                   dict: возвращает словарь остатков на casio
+
+       """
+
     casio_url = "https://timeworld.ru/upload/files/ostatki.zip"
     session = requests.Session()
     response = session.get(casio_url)
     response.raise_for_status()
     with response, zipfile.ZipFile(io.BytesIO(response.content)) as archive:
         archive.extractall(".")
-    # Создаем список остатков часов:
+
     excel_file = "ostatki.xls"
     watch_remnants = pd.read_excel(
         io=excel_file,
@@ -91,12 +196,25 @@ def download_stock():
         keep_default_na=False,
         header=17,
     ).to_dict(orient="records")
-    os.remove("./ostatki.xls")  # Удалить файл
+    os.remove("./ostatki.xls")
     return watch_remnants
 
 
 def create_stocks(watch_remnants, offer_ids):
-    # Уберем то, что не загружено в seller
+    """Обновить остатки
+
+            Args:
+                watch_remnants (dict): словарь остатков на casio
+                offer_ids (list): список с продуктами
+
+            Returns:
+                dict: возвращает обновленный список словарей с остатками
+
+            Raises:
+                requests.exceptions.InvalidHeader: если неправильно указаны
+                    id или токен
+
+    """
     stocks = []
     for watch in watch_remnants:
         if str(watch.get("Код")) in offer_ids:
@@ -116,6 +234,21 @@ def create_stocks(watch_remnants, offer_ids):
 
 
 def create_prices(watch_remnants, offer_ids):
+    """Сформировать цены
+
+             Args:
+                 watch_remnants (dict): словарь остатков на casio
+                 offer_ids (list): список с продуктами
+
+             Returns:
+                 dict: возвращает обновленный список словарей с
+                    ценами на часы
+
+             Raises:
+                 requests.exceptions.InvalidHeader: если неправильно указаны
+                     id или токен
+
+        """
     prices = []
     for watch in watch_remnants:
         if str(watch.get("Код")) in offer_ids:
@@ -131,17 +264,72 @@ def create_prices(watch_remnants, offer_ids):
 
 
 def price_conversion(price: str) -> str:
-    """Преобразовать цену. Пример: 5'990.00 руб. -> 5990"""
+    """Преобразовать цену. Пример: 5'990.00 руб. -> 5990.
+
+        Args:
+            price (str): цена в формате str
+
+        Returns:
+            str: пребразованная цена.
+
+        Raises:
+            AttributeError: если аргумент не str
+
+        Examples:
+
+            >>> import re
+            >>> print(price_conversion("5'990.00 руб."))
+            5990
+
+        """
     return re.sub("[^0-9]", "", price.split(".")[0])
 
 
 def divide(lst: list, n: int):
-    """Разделить список lst на части по n элементов"""
+    """Разделить список lst на части по n элементов
+
+        Args:
+            lst (str): список
+            n (int): количество элементов
+
+        Yields:
+            str: списки с элементами
+
+        Raises:
+            AttributeError: если аргумент lst не list,
+                n не int
+
+        Examples:
+
+            >>> res = divide(some_list, 2)
+            >>> for s in res:
+            ...     print(s)
+                [1, 2]
+                [3, 4]
+                [5, 6]
+                [7, 8]
+
+        """
     for i in range(0, len(lst), n):
         yield lst[i : i + n]
 
 
 async def upload_prices(watch_remnants, client_id, seller_token):
+    """загрузить цены
+
+            Args:
+                watch_remnants (dict): словарь остатков на casio
+                client_id (str): id клиента
+                seller_token (str): токен продавца
+
+            Returns:
+                dict: возвращает обновленный список словарей с ценами
+
+            Raises:
+                requests.exceptions.InvalidHeader: если неправильно указаны
+                    id или токен
+
+    """
     offer_ids = get_offer_ids(client_id, seller_token)
     prices = create_prices(watch_remnants, offer_ids)
     for some_price in list(divide(prices, 1000)):
@@ -150,6 +338,21 @@ async def upload_prices(watch_remnants, client_id, seller_token):
 
 
 async def upload_stocks(watch_remnants, client_id, seller_token):
+    """загрузить остатки
+
+            Args:
+                watch_remnants (dict): словарь остатков на casio
+                client_id (str): id клиента
+                seller_token (str): токен продавца
+
+            Returns:
+                dict: возвращает обновленный список словарей с остатками
+
+            Raises:
+                requests.exceptions.InvalidHeader: если неправильно указаны
+                    id или токен
+
+    """
     offer_ids = get_offer_ids(client_id, seller_token)
     stocks = create_stocks(watch_remnants, offer_ids)
     for some_stock in list(divide(stocks, 100)):
